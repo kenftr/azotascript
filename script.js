@@ -1,7 +1,10 @@
 (async () => {
+  // Lưu trữ các hàm gốc của setTimeout và setInterval
+  const originalSetTimeout = window.setTimeout;
+  const originalSetInterval = window.setInterval;
+
   // Hàm chặn phát hiện: inject đoạn mã chống phát hiện
   function injectAntiDetection() {
-    // Override các thuộc tính và sự kiện để ẩn trạng thái ẩn của trang
     Object.defineProperty(document, "hidden", { get: () => false, configurable: true });
     Object.defineProperty(document, "visibilityState", { get: () => "visible", configurable: true });
     document.addEventListener("visibilitychange", e => e.stopImmediatePropagation(), true);
@@ -15,6 +18,20 @@
   // Hàm gỡ chặn: reload trang để khôi phục trạng thái ban đầu
   function removeAntiDetection() {
     location.reload();
+  }
+
+  // Hàm tạm ngưng bộ đếm thời gian: ghi đè setTimeout và setInterval thành hàm không làm gì
+  function pauseTimers() {
+    window.setTimeout = () => 0;
+    window.setInterval = () => 0;
+    console.log("Timers paused");
+  }
+
+  // Hàm khôi phục bộ đếm thời gian: phục hồi các hàm gốc
+  function resumeTimers() {
+    window.setTimeout = originalSetTimeout;
+    window.setInterval = originalSetInterval;
+    console.log("Timers resumed");
   }
 
   // Lấy nội dung hiển thị trên trang
@@ -56,14 +73,31 @@
   let oldDiv = document.getElementById("hiddenResult");
   if (oldDiv) oldDiv.remove();
 
-  // Tạo khung kết quả mới với giao diện hiện đại, animation, Light/Dark mode, ẩn/hiện và switch inject anti-detection
+  // Tạo khung kết quả mới với giao diện hiện đại, animation, Light/Dark mode,
+  // ẩn/hiện, switch Inject Anti-Detection và switch Pause Timer
   let resultDiv = document.createElement("div");
   resultDiv.id = "hiddenResult";
   resultDiv.innerHTML = `
     <style>
-      @keyframes fadeIn {
-        from { opacity: 0; transform: scale(0.9); }
-        to { opacity: 1; transform: scale(1); }
+      @keyframes fadeInScale {
+        from {
+          opacity: 0;
+          transform: scale(0.9);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+      @keyframes fadeOutScale {
+        from {
+          opacity: 1;
+          transform: scale(1);
+        }
+        to {
+          opacity: 0;
+          transform: scale(0.9);
+        }
       }
       :root {
         --bg-color-light: #ffffff;
@@ -100,28 +134,43 @@
         display: flex;
         flex-direction: column;
         overflow: hidden;
-        animation: fadeIn 0.5s ease;
+        animation: fadeInScale 0.5s ease-out;
         transition: background 0.3s, color 0.3s, border 0.3s;
+      }
+      #hiddenResult.removing {
+        animation: fadeOutScale 0.3s ease-in;
       }
       #resultHeader {
         display: flex;
+        flex-wrap: wrap;
         justify-content: space-between;
         align-items: center;
         margin-bottom: 10px;
       }
-      /* Switch style cho ẩn/hiện kết quả */
-      .toggleSwitch {
+      /* Switch style chung */
+      .switch {
+        display: flex;
+        align-items: center;
+        margin-right: 10px;
+      }
+      .switch label {
+        margin-left: 5px;
+      }
+      .toggleSwitch, .modeSwitch, .injectSwitch, .timerSwitch {
         position: relative;
         display: inline-block;
-        width: 40px;
-        height: 20px;
+        width: 50px;
+        height: 24px;
       }
-      .toggleSwitch input {
+      .toggleSwitch input,
+      .modeSwitch input,
+      .injectSwitch input,
+      .timerSwitch input {
         opacity: 0;
         width: 0;
         height: 0;
       }
-      .slider {
+      .slider, .modeSlider, .injectSlider, .timerSlider {
         position: absolute;
         cursor: pointer;
         top: 0;
@@ -129,14 +178,17 @@
         right: 0;
         bottom: 0;
         background-color: #ccc;
-        transition: 0.4s;
+        transition: background-color 0.4s ease, transform 0.2s ease-in-out;
         border-radius: 34px;
       }
-      .slider:before {
+      .slider:before,
+      .modeSlider:before,
+      .injectSlider:before,
+      .timerSlider:before {
         position: absolute;
         content: "";
-        height: 16px;
-        width: 16px;
+        height: 20px;
+        width: 20px;
         left: 2px;
         bottom: 2px;
         background-color: white;
@@ -147,89 +199,25 @@
         background-color: #66bb6a;
       }
       input:checked + .slider:before {
-        transform: translateX(20px);
-      }
-      /* Switch cho Light/Dark mode */
-      .modeSwitch {
-        position: relative;
-        display: inline-block;
-        width: 50px;
-        height: 24px;
-        margin-left: 15px;
-      }
-      .modeSwitch input {
-        opacity: 0;
-        width: 0;
-        height: 0;
-      }
-      .modeSlider {
-        position: absolute;
-        cursor: pointer;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background-color: #ccc;
-        transition: 0.4s;
-        border-radius: 34px;
-      }
-      .modeSlider:before {
-        position: absolute;
-        content: "";
-        height: 20px;
-        width: 20px;
-        left: 2px;
-        bottom: 2px;
-        background-color: white;
-        transition: 0.4s;
-        border-radius: 50%;
+        transform: translateX(26px) scale(1.1);
       }
       input:checked + .modeSlider {
         background-color: #2196F3;
       }
       input:checked + .modeSlider:before {
-        transform: translateX(26px);
-      }
-      /* Switch cho Anti-Detection */
-      .injectSwitch {
-        position: relative;
-        display: inline-block;
-        width: 50px;
-        height: 24px;
-        margin-left: 15px;
-      }
-      .injectSwitch input {
-        opacity: 0;
-        width: 0;
-        height: 0;
-      }
-      .injectSlider {
-        position: absolute;
-        cursor: pointer;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background-color: #ccc;
-        transition: 0.4s;
-        border-radius: 34px;
-      }
-      .injectSlider:before {
-        position: absolute;
-        content: "";
-        height: 20px;
-        width: 20px;
-        left: 2px;
-        bottom: 2px;
-        background-color: white;
-        transition: 0.4s;
-        border-radius: 50%;
+        transform: translateX(26px) scale(1.1);
       }
       input:checked + .injectSlider {
         background-color: #ff9800;
       }
       input:checked + .injectSlider:before {
-        transform: translateX(26px);
+        transform: translateX(26px) scale(1.1);
+      }
+      input:checked + .timerSlider {
+        background-color: #9c27b0;
+      }
+      input:checked + .timerSlider:before {
+        transform: translateX(26px) scale(1.1);
       }
       /* Close button style */
       #closeButton {
@@ -238,9 +226,11 @@
         font-size: 20px;
         cursor: pointer;
         color: inherit;
+        transition: transform 0.2s ease, opacity 0.2s ease;
       }
       #closeButton:hover {
-        opacity: 0.7;
+        transform: scale(1.2);
+        opacity: 0.8;
       }
       /* Result text */
       #resultText {
@@ -250,22 +240,33 @@
       }
     </style>
     <div id="resultHeader">
-      <div style="display: flex; align-items: center;">
+      <div class="switch">
         <label class="toggleSwitch">
           <input type="checkbox" id="toggleResult">
           <span class="slider"></span>
         </label>
-        <span style="margin-left: 8px;">Ẩn/Hiện</span>
+        <label for="toggleResult">Ẩn/Hiện</label>
+      </div>
+      <div class="switch">
         <label class="modeSwitch">
           <input type="checkbox" id="toggleMode">
           <span class="modeSlider"></span>
         </label>
-        <span style="margin-left: 8px;">Light/Dark</span>
+        <label for="toggleMode">Light/Dark</label>
+      </div>
+      <div class="switch">
         <label class="injectSwitch">
           <input type="checkbox" id="toggleInject">
           <span class="injectSlider"></span>
         </label>
-        <span style="margin-left: 8px;">Inject Anti-Detection</span>
+        <label for="toggleInject">Anti-Detection</label>
+      </div>
+      <div class="switch">
+        <label class="timerSwitch">
+          <input type="checkbox" id="toggleTimer">
+          <span class="timerSlider"></span>
+        </label>
+        <label for="toggleTimer">Pause Timer</label>
       </div>
       <button id="closeButton">×</button>
     </div>
@@ -278,9 +279,11 @@
   resultDiv.classList.add("light-mode");
   document.body.appendChild(resultDiv);
 
-  // Sự kiện đóng khung kết quả
+  // Sự kiện đóng khung kết quả với hiệu ứng fade-out scale
   document.getElementById("closeButton").addEventListener("click", () => {
-    document.getElementById("hiddenResult").remove();
+    let resultBox = document.getElementById("hiddenResult");
+    resultBox.classList.add("removing");
+    setTimeout(() => resultBox.remove(), 300);
   });
 
   // Sự kiện ẩn/hiện nội dung kết quả khi toggle switch
@@ -289,7 +292,7 @@
     resultTextDiv.style.display = e.target.checked ? "none" : "block";
   });
 
-  // Sự kiện chuyển đổi Light/Dark mode
+  // Sự kiện chuyển đổi Light/Dark mode với hiệu ứng mượt mà
   document.getElementById("toggleMode").addEventListener("change", (e) => {
     if (e.target.checked) {
       resultDiv.classList.remove("light-mode");
@@ -308,9 +311,16 @@
       removeAntiDetection();
     }
   });
+
+  // Sự kiện tạm ngưng/khôi phục bộ đếm thời gian
+  document.getElementById("toggleTimer").addEventListener("change", (e) => {
+    if (e.target.checked) {
+      pauseTimers();
+    } else {
+      resumeTimers();
+    }
+  });
 })().catch(error => {
   console.error("Đã xảy ra lỗi:", error);
   alert("Lỗi xảy ra: " + error.message);
 });
-
-
