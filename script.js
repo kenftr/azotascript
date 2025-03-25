@@ -56,7 +56,7 @@
   const visibleContent = getVisibleText();
 
   // Gửi request đến API
-  const response = await fetch("https://9829-113-178-136-136.ngrok-free.app/solve", {
+  const response = await fetch("https://9b6b-113-178-136-136.ngrok-free.app/solve", {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
