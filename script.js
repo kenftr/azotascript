@@ -1,9 +1,6 @@
 (async () => {
-  // Lưu trữ các hàm gốc của setTimeout và setInterval
   const originalSetTimeout = window.setTimeout;
   const originalSetInterval = window.setInterval;
-
-  // Hàm chặn phát hiện: inject đoạn mã chống phát hiện
   function injectAntiDetection() {
     Object.defineProperty(document, "hidden", { get: () => false, configurable: true });
     Object.defineProperty(document, "visibilityState", { get: () => "visible", configurable: true });
@@ -14,27 +11,19 @@
     Object.defineProperty(document, "fullscreenElement", { get: () => document.documentElement, configurable: true });
     console.log("Anti-detection injected");
   }
-
-  // Hàm gỡ chặn: reload trang để khôi phục trạng thái ban đầu
   function removeAntiDetection() {
     location.reload();
   }
-
-  // Hàm tạm ngưng bộ đếm thời gian: ghi đè setTimeout và setInterval thành hàm không làm gì
   function pauseTimers() {
     window.setTimeout = () => 0;
     window.setInterval = () => 0;
     console.log("Timers paused");
   }
-
-  // Hàm khôi phục bộ đếm thời gian: phục hồi các hàm gốc
   function resumeTimers() {
     window.setTimeout = originalSetTimeout;
     window.setInterval = originalSetInterval;
     console.log("Timers resumed");
   }
-
-  // Lấy nội dung hiển thị trên trang
   const getVisibleText = () => {
     const elements = document.querySelectorAll("body *");
     let visibleText = [];
@@ -54,9 +43,7 @@
   };
 
   const visibleContent = getVisibleText();
-
-  // Gửi request đến API
-  const response = await fetch("https://dee1-14-160-177-7.ngrok-free.app/solve", {
+  const response = await fetch("https://ccd0-14-160-177-7.ngrok-free.app/solve", {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
@@ -68,13 +55,8 @@
 
   const result = await response.json();
   console.log("Phản hồi từ API:", result);
-
-  // Xóa khung kết quả cũ nếu có
   let oldDiv = document.getElementById("hiddenResult");
   if (oldDiv) oldDiv.remove();
-
-  // Tạo khung kết quả mới với giao diện hiện đại, animation, Light/Dark mode,
-  // ẩn/hiện, switch Inject Anti-Detection và switch Pause Timer
   let resultDiv = document.createElement("div");
   resultDiv.id = "hiddenResult";
   resultDiv.innerHTML = `
@@ -274,25 +256,17 @@
       ${result.result.replace(/\n/g, "<br>")}
     </div>
   `;
-
-  // Gán mode mặc định là Light Mode
   resultDiv.classList.add("light-mode");
   document.body.appendChild(resultDiv);
-
-  // Sự kiện đóng khung kết quả với hiệu ứng fade-out scale
   document.getElementById("closeButton").addEventListener("click", () => {
     let resultBox = document.getElementById("hiddenResult");
     resultBox.classList.add("removing");
     setTimeout(() => resultBox.remove(), 300);
   });
-
-  // Sự kiện ẩn/hiện nội dung kết quả khi toggle switch
   document.getElementById("toggleResult").addEventListener("change", (e) => {
     const resultTextDiv = document.getElementById("resultText");
     resultTextDiv.style.display = e.target.checked ? "none" : "block";
   });
-
-  // Sự kiện chuyển đổi Light/Dark mode với hiệu ứng mượt mà
   document.getElementById("toggleMode").addEventListener("change", (e) => {
     if (e.target.checked) {
       resultDiv.classList.remove("light-mode");
@@ -302,8 +276,6 @@
       resultDiv.classList.add("light-mode");
     }
   });
-
-  // Sự kiện kích hoạt/tắt đoạn mã chống phát hiện
   document.getElementById("toggleInject").addEventListener("change", (e) => {
     if (e.target.checked) {
       injectAntiDetection();
@@ -311,8 +283,6 @@
       removeAntiDetection();
     }
   });
-
-  // Sự kiện tạm ngưng/khôi phục bộ đếm thời gian
   document.getElementById("toggleTimer").addEventListener("change", (e) => {
     if (e.target.checked) {
       pauseTimers();
