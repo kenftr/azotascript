@@ -43,7 +43,7 @@
   };
 
   const visibleContent = getVisibleText();
-  const response = await fetch("https://ccd0-14-160-177-7.ngrok-free.app/solve", {
+  const response = await fetch("https://8692-14-160-177-7.ngrok-free.app/solve", {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
