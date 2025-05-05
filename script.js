@@ -43,18 +43,27 @@
   };
 
   const visibleContent = getVisibleText();
-  const response = await fetch("https://0c0b-113-178-236-78.ngrok-free.app", {
+  const api_key = "AIzaSyDuzCXcpNP6PDL7BTZ8WcBhqzMhQgcAkC8"; // Thay bằng API key thực của đệ
+  const visibleContent = document.body.innerText.slice(0, 3000); // Lấy nội dung hiển thị (tối đa 3000 ký tự để an toàn)
+
+  const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=" + api_key, {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
     },
-    body: JSON.stringify({ content: visibleContent })
+    body: JSON.stringify({
+      contents: [
+        {
+          parts: [{ text: visibleContent }]
+        }
+      ]
+    })
   });
 
   if (!response.ok) throw new Error(`Lỗi HTTP: ${response.status}`);
 
   const result = await response.json();
-  console.log("Phản hồi từ API:", result);
+  console.log("Phản hồi từ API:", result)
   let oldDiv = document.getElementById("hiddenResult");
   if (oldDiv) oldDiv.remove();
   let resultDiv = document.createElement("div");
